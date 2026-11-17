@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { getApplication } from '../../services/api.js';
-import { formatCurrency, formatDate } from '../../config.js';
+import { config, formatCurrency, formatDate } from '../../config.js';
+import DocumentsBlock from '../../components/DocumentsBlock.jsx';
 import { sections } from '../../data/formConfig.js';
 import Badge from '../../components/Badge.jsx';
 import BarList from '../../components/BarList.jsx';
@@ -41,7 +42,9 @@ export default function ApplicationView({ detail }) {
       <div className={'result-box ' + (ok ? 'yes' : 'no')}>
         <div className="muted">Application {app.id} | {formatDate(app.createdAt)}</div>
         <div className="big">{app.label}</div>
-        <div>Demo score: {Math.round(app.probability * 100)}%</div>
+        <div>{config.USE_MOCK ? 'Demo score' : 'Model score (' + app.modelUsed + ', trained on synthetic data)'}: {Math.round(app.probability * 100)}%</div>
+        {app.bureauScore ? <div>Credit bureau score (simulated): {app.bureauScore}</div> : null}
+        {app.decisionNote ? <div className="muted">Status: {app.status}. {app.decisionNote}</div> : null}
       </div>
 
       <div className="grid grid-2">
@@ -77,6 +80,7 @@ export default function ApplicationView({ detail }) {
       )}
 
       <Link to="/app/history" className="btn btn-light">Back to history</Link>{' '}
+      {!config.USE_MOCK && <DocumentsBlock appId={app.id} />}
       {!detail && <Link to="/app/apply" className="btn btn-teal">New application</Link>}
     </div>
   );

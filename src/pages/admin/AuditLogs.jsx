@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getAuditLogs } from '../../services/api.js';
+import { getAuditLogs, downloadExport } from '../../services/api.js';
+import { config } from '../../config.js';
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState(null);
@@ -14,6 +15,7 @@ export default function AuditLogs() {
   return (
     <div>
       <h1>Audit Logs</h1>
+      {!config.USE_MOCK && <p><button className="btn btn-teal" onClick={() => downloadExport('audit').catch((e) => alert(e.message))}>Download as Excel</button></p>}
       <div className="card">
         <div className="toolbar">
           <label>Action:</label>

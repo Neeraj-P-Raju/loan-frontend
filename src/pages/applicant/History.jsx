@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { getApplications } from '../../services/api.js';
+import { getApplications, withdrawApplication, deleteApplication } from '../../services/api.js';
 import { formatCurrency, formatDate } from '../../config.js';
 import Badge from '../../components/Badge.jsx';
 
@@ -14,6 +14,15 @@ export default function HistoryPage() {
   useEffect(() => {
     getApplications(user.email).then(setApps);
   }, [user.email]);
+
+  async function withdraw(id) {
+    if (!window.confirm('Withdraw this application?')) return;
+    try { await withdrawApplication(id); setApps(await getApplications(user.email)); } catch (e) { alert(e.message); }
+  }
+  async function remove(id) {
+    if (!window.confirm('Permanently delete this application and its documents?')) return;
+    try { await deleteApplication(id); setApps(await getApplications(user.email)); } catch (e) { alert(e.message); }
+  }
 
   if (!apps) return <p>Loading...</p>;
 
@@ -41,9 +50,9 @@ export default function HistoryPage() {
               <tbody>
                 {shown.map((a) => (
                   <tr key={a.id}>
-                    <td>{a.id}</td><td>{formatDate(a.createdAt)}</td><td>{a.loanType}</td>
+                    <td>{a.id}{a.isTest ? ' (test)' : ''}</td><td>{formatDate(a.createdAt)}</td><td>{a.loanType}</td>
                     <td>{formatCurrency(a.loanAmount)}</td><td><Badge text={a.label} /></td>
-                    <td><Badge text={a.status} /></td><td><Link to={`/app/history/${a.id}`}>View</Link></td>
+                    <td><Badge text={a.status} /></td><td><Link to={`/app/history/${a.id}`}>View</Link>{a.status === 'Pending' && <> | <a href="#" onClick={(e) => { e.preventDefault(); withdraw(a.id); }}>Withdraw</a></>} | <a href="#" onClick={(e) => { e.preventDefault(); remove(a.id); }}>Delete</a></td>
                   </tr>
                 ))}
               </tbody>

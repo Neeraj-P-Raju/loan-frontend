@@ -11,6 +11,8 @@ import HistoryPage from './pages/applicant/History.jsx';
 import Profile from './pages/applicant/Profile.jsx';
 import Overview from './pages/admin/Overview.jsx';
 import Applications from './pages/admin/Applications.jsx';
+import DatasetsCloud from './pages/admin/DatasetsCloud.jsx';
+import { config } from './config.js';
 import Datasets from './pages/admin/Datasets.jsx';
 import Preprocessing from './pages/admin/Preprocessing.jsx';
 import Training from './pages/admin/Training.jsx';
@@ -30,6 +32,7 @@ export default function App() {
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="apply" element={<NewApplication />} />
+        <Route path="test" element={<NewApplication testMode />} />
         <Route path="result/:id" element={<ApplicationView />} />
         <Route path="history" element={<HistoryPage />} />
         <Route path="history/:id" element={<ApplicationView detail />} />
@@ -40,7 +43,9 @@ export default function App() {
         <Route index element={<Navigate to="overview" replace />} />
         <Route path="overview" element={<Overview />} />
         <Route path="applications" element={<Applications />} />
-        <Route path="datasets" element={<Datasets />} />
+        <Route path="applications/:id" element={<ApplicationView detail />} />
+        <Route path="test" element={<NewApplication testMode />} />
+        <Route path="datasets" element={config.USE_MOCK ? <Datasets /> : <DatasetsCloud />} />
         <Route path="preprocessing" element={<Preprocessing />} />
         <Route path="training" element={<Training />} />
         <Route path="comparison" element={<Comparison />} />

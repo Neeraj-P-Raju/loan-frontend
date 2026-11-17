@@ -1,19 +1,20 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PublicNav from '../components/PublicNav.jsx';
+import { config } from '../config.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 export default function Register() {
-  const { login } = useAuth();
+  const { login, signUp } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [errors, setErrors] = useState({});
 
   const set = (k) => (e) => setForm({ ...form, [k]: e.target.value });
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const err = {};
     if (form.name.trim().length < 3) err.name = 'Enter your full name';
@@ -22,7 +23,11 @@ export default function Register() {
     if (form.confirm !== form.password) err.confirm = 'Passwords do not match';
     setErrors(err);
     if (Object.keys(err).length) return;
-    login(form.email, 'applicant', form.name);
+    if (config.USE_MOCK) {
+      login(form.email, 'applicant', form.name);
+    } else {
+      try { await signUp(form.name, form.email, form.password); } catch (ex) { setErrors({ email: ex.message }); return; }
+    }
     navigate('/app/dashboard');
   }
 

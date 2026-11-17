@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { getApplications, updateApplicationStatus, deleteApplication } from '../../services/api.js';
-import { formatCurrency, formatDate } from '../../config.js';
+import { Link } from 'react-router-dom';
+import { getApplications, updateApplicationStatus, deleteApplication, downloadExport } from '../../services/api.js';
+import { config, formatCurrency, formatDate } from '../../config.js';
 import Badge from '../../components/Badge.jsx';
 import Modal from '../../components/Modal.jsx';
 
@@ -45,9 +46,10 @@ export default function Applications() {
       <h1>Application Management</h1>
       <div className="card">
         <div className="toolbar">
+          {!config.USE_MOCK && <button className="btn btn-teal btn-small" onClick={() => downloadExport('applications').catch((e) => alert(e.message))}>Download Excel</button>}
           <input type="search" placeholder="Search by ID, name or email" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           <select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
-            {['All', 'Pending', 'Approved', 'Rejected'].map((s) => <option key={s}>{s}</option>)}
+            {['All', 'Pending', 'Approved', 'Rejected', 'Withdrawn'].map((s) => <option key={s}>{s}</option>)}
           </select>
           <select value={type} onChange={(e) => { setType(e.target.value); setPage(1); }}>
             {['All', 'Home loan', 'Personal loan', 'Education loan', 'Business loan'].map((s) => <option key={s}>{s}</option>)}
@@ -61,14 +63,14 @@ export default function Applications() {
               <tbody>
                 {rows.map((a) => (
                   <tr key={a.id}>
-                    <td>{a.id}</td><td>{a.applicantName}</td><td>{formatDate(a.createdAt)}</td><td>{a.loanType}</td>
+                    <td>{a.id}{a.isTest ? ' (test)' : ''}</td><td>{a.applicantName}</td><td>{formatDate(a.createdAt)}</td><td>{a.loanType}</td>
                     <td>{formatCurrency(a.loanAmount)}</td><td><Badge text={a.label} /></td>
                     <td>
                       <select value={a.status} onChange={(e) => changeStatus(a.id, e.target.value)} style={{ width: 110 }}>
-                        {['Pending', 'Approved', 'Rejected'].map((s) => <option key={s}>{s}</option>)}
+                        {['Pending', 'Approved', 'Rejected', 'Withdrawn'].map((s) => <option key={s}>{s}</option>)}
                       </select>
                     </td>
-                    <td><button className="btn btn-light btn-small" onClick={() => setToDelete(a)}>Delete</button></td>
+                    <td><Link to={"/admin/applications/" + a.id} className="btn btn-light btn-small">View</Link> <button className="btn btn-light btn-small" onClick={() => setToDelete(a)}>Delete</button></td>
                   </tr>
                 ))}
               </tbody>

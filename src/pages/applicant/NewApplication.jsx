@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { createApplication } from '../../services/api.js';
 import { formatCurrency } from '../../config.js';
 import {
-  sections, stepTitles, visibleFields, clearHiddenAnswers, validateSection, validateField,
+  getSections, visibleFields, clearHiddenAnswers, validateSection, validateField,
 } from '../../data/formConfig.js';
 
 // One component draws every section from the configuration in formConfig.js.
@@ -18,6 +18,8 @@ function FieldInput({ field, value, error, onChange }) {
         {field.options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
     );
+  } else if (field.type === 'file') {
+    input = <input type="file" accept={field.accept} onChange={(e) => onChange(field.name, e.target.files[0])} />;
   } else {
     input = <input type={field.type} {...common} />;
   }
@@ -36,9 +38,11 @@ function FieldInput({ field, value, error, onChange }) {
   );
 }
 
-export default function NewApplication() {
+export default function NewApplication({ testMode = false }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const sections = useMemo(() => getSections(testMode), [testMode]);
+  const stepTitles = [...sections.map((s) => s.title), 'Review and Submit'];
   const [step, setStep] = useState(0);
   const [values, setValues] = useState({});
   const [errors, setErrors] = useState({});
@@ -69,13 +73,19 @@ export default function NewApplication() {
       }
     }
     setSaving(true);
-    const app = await createApplication(values, user);
-    navigate(`/app/result/${app.id}`);
+    try {
+      const app = await createApplication(values, user, testMode);
+      navigate(user.role === 'admin' ? `/admin/applications/${app.id}` : `/app/result/${app.id}`);
+    } catch (err) {
+      setSaving(false);
+      alert(err.message);
+    }
   }
 
   return (
     <div>
-      <h1>New Loan Application</h1>
+      <h1>{testMode ? 'Test Application (testing mode)' : 'New Loan Application'}</h1>
+      {testMode && <div className="notice info">TEST MODE: every field is optional (loan amount and term are still needed to predict) and documents are not required. The prediction uses the same model and rules as a real application, and the record is marked as a test.</div>}
       <div className="stepper">
         {stepTitles.map((t, i) => (
           <div key={t} className={'step' + (i < step ? ' done' : '') + (i === step ? ' current' : '')}>
@@ -116,7 +126,7 @@ export default function NewApplication() {
                   {visibleFields(s, values).map((f) => (
                     <div key={f.name} style={{ display: 'contents' }}>
                       <dt>{f.label}</dt>
-                      <dd>{values[f.name] ? (f.unit === '₹' || f.unit === '₹ per month' ? formatCurrency(values[f.name]) : values[f.name] + (f.unit && f.type === 'number' ? ' ' + f.unit : '')) : '-'}</dd>
+                      <dd>{values[f.name] instanceof File ? values[f.name].name : values[f.name] ? (f.unit === '₹' || f.unit === '₹ per month' ? formatCurrency(values[f.name]) : values[f.name] + (f.unit && f.type === 'number' ? ' ' + f.unit : '')) : '-'}</dd>
                     </div>
                   ))}
                   {visibleFields(s, values).length === 0 && <dd>Not needed for this loan type</dd>}

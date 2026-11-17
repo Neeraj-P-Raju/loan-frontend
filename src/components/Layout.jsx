@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FilePlus2, History, User, LogOut, Users, Database, Wand2,
   Cpu, BarChart3, Clock, ScrollText, Settings, ShieldCheck,
+  FlaskConical,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { config } from '../config.js';
@@ -10,12 +11,14 @@ const applicantLinks = [
   { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/app/apply', label: 'New Application', icon: FilePlus2 },
   { to: '/app/history', label: 'History', icon: History },
+  { to: '/app/test', label: 'Test Mode', icon: FlaskConical },
   { to: '/app/profile', label: 'Profile', icon: User },
 ];
 
 const adminLinks = [
   { to: '/admin/overview', label: 'Overview', icon: LayoutDashboard },
   { to: '/admin/applications', label: 'Applications', icon: Users },
+  { to: '/admin/test', label: 'Test Mode', icon: FlaskConical },
   { to: '/admin/datasets', label: 'Datasets', icon: Database },
   { to: '/admin/preprocessing', label: 'Preprocessing', icon: Wand2 },
   { to: '/admin/training', label: 'Model Training', icon: Cpu },

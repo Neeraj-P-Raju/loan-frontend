@@ -16,6 +16,12 @@ export const sections = [
       { name: 'spouseWorking', label: 'Is your spouse employed?', type: 'select', options: yesNo, showIf: is('maritalStatus', 'Married') },
       { name: 'dependents', label: 'Number of dependents', type: 'select', required: true, options: ['0', '1', '2', '3+'] },
       { name: 'education', label: 'Education level', type: 'select', required: true, options: ['Graduate', 'Not graduate'] },
+      { name: 'address', label: 'Residential address', type: 'text', required: true },
+      { name: 'city', label: 'City', type: 'text', required: true },
+      { name: 'state', label: 'State', type: 'text', required: true },
+      { name: 'pincode', label: 'PIN code', type: 'text', required: true, pattern: '^[1-9][0-9]{5}$', patternMsg: 'Enter a valid 6-digit PIN code' },
+      { name: 'residenceType', label: 'Residence type', type: 'select', required: true, options: ['Owned', 'Rented', 'Parental / family'] },
+      { name: 'yearsAtAddress', label: 'Years at current address', type: 'number', unit: 'years', required: true, min: 0, max: 80 },
       { name: 'gender', label: 'Gender', type: 'select', options: ['Male', 'Female', 'Prefer not to say'], hint: 'Optional. May be left out of the model.' },
     ],
   },
@@ -53,7 +59,29 @@ export const sections = [
       { name: 'hasExistingLoans', label: 'Do you have existing loans?', type: 'select', required: true, options: yesNo },
       { name: 'numLoans', label: 'Number of existing loans', type: 'number', required: true, min: 1, max: 20, showIf: is('hasExistingLoans', 'Yes') },
       { name: 'monthlyRepayment', label: 'Total monthly repayment', type: 'number', unit: '₹ per month', required: true, min: 0, showIf: is('hasExistingLoans', 'Yes') },
-      { name: 'creditHistory', label: 'Credit history', type: 'select', required: true, options: ['Good (repaid previous debts)', 'Poor (missed payments)', 'No credit history'] },
+    ],
+  },
+  {
+    id: 'kyc',
+    title: 'Identity and Credit Check',
+    note: 'Your credit score is fetched from the credit bureau using your PAN and consent. You do not enter it yourself. Full PAN, Aadhaar and mobile numbers are not stored; only masked values are kept.',
+    fields: [
+      { name: 'mobile', label: 'Mobile number', type: 'text', required: true, hint: '10-digit Indian mobile number', pattern: '^[6-9][0-9]{9}$', patternMsg: 'Enter a valid 10-digit mobile number' },
+      { name: 'pan', label: 'PAN', type: 'text', required: true, hint: 'Format ABCDE1234F', pattern: '^[A-Z]{5}[0-9]{4}[A-Z]$', patternMsg: 'PAN must look like ABCDE1234F' },
+      { name: 'aadhaar', label: 'Aadhaar number', type: 'text', required: true, hint: '12 digits. Only the last 4 digits are kept.', pattern: '^[2-9][0-9]{11}$', patternMsg: 'Enter a valid 12-digit Aadhaar number' },
+      { name: 'bureauConsent', label: 'I consent to fetching my credit report from the credit bureau', type: 'select', required: true, options: ['Yes', 'No'], pattern: '^Yes$', patternMsg: 'Consent is required to fetch your credit report' },
+    ],
+  },
+  {
+    id: 'documents',
+    title: 'Photo and Documents',
+    note: 'Upload clear photos or PDFs. Files are stored securely in the system database and are visible only to you and the reviewing admin. Do not upload an Aadhaar card image; the Aadhaar number entered earlier is enough.',
+    fields: [
+      { name: 'photo', label: 'Passport-size photo', type: 'file', accept: 'image/jpeg,image/png', maxMb: 2, required: true, hint: 'JPG or PNG, up to 2 MB, face clearly visible' },
+      { name: 'panCard', label: 'PAN card', type: 'file', accept: 'application/pdf,image/jpeg,image/png', maxMb: 5, required: true, hint: 'PDF, JPG or PNG, up to 5 MB' },
+      { name: 'addressProof', label: 'Address proof', type: 'file', accept: 'application/pdf,image/jpeg,image/png', maxMb: 5, required: true, hint: 'Utility bill, rent agreement, passport or driving licence' },
+      { name: 'incomeProof', label: 'Income proof', type: 'file', accept: 'application/pdf,image/jpeg,image/png', maxMb: 5, required: true, hint: 'Last 3 salary slips, or ITR / business proof if self-employed' },
+      { name: 'bankStatement', label: 'Bank statement, last 6 months', type: 'file', accept: 'application/pdf,image/jpeg,image/png', maxMb: 5, hint: 'Recommended; speeds up review' },
     ],
   },
   {
@@ -124,6 +152,7 @@ export function clearHiddenAnswers(values) {
 
 // Returns an error message for one field, or an empty string.
 export function validateField(field, value) {
+  if (field.type === 'file' && value instanceof File) return value.size > (field.maxMb || 5) * 1048576 ? `File must be under ${field.maxMb || 5} MB` : '';
   const empty = value === undefined || value === null || String(value).trim() === '';
   if (empty) return field.required ? 'This field is required' : '';
   if (field.type === 'number') {
@@ -144,8 +173,21 @@ export function validateField(field, value) {
 export function validateSection(section, values) {
   const errors = {};
   for (const f of visibleFields(section, values)) {
-    const msg = validateField(f, values[f.name]);
+    const msg = validateField(f, values[f.name]) || (f.pattern && values[f.name] && !new RegExp(f.pattern).test(String(values[f.name]).toUpperCase().replace(/\s/g, '')) ? f.patternMsg : '');
     if (msg) errors[f.name] = msg;
   }
   return errors;
+}
+
+// Test mode: the same questions as the real form, but every field is optional, and one extra
+// field lets the tester choose the credit score. The prediction itself uses the same model and rules.
+export function getSections(testMode) {
+  if (!testMode) return sections;
+  return sections.map((s) => ({
+    ...s,
+    fields: [
+      ...s.fields.map((f) => ({ ...f, required: false })),
+      ...(s.id === 'kyc' ? [{ name: 'testCreditScore', label: 'TEST ONLY: credit score', type: 'number', min: 300, max: 900, hint: 'Leave blank to use the simulated bureau score from the PAN' }] : []),
+    ],
+  }));
 }

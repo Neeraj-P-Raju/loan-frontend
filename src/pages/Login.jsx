@@ -1,27 +1,37 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import PublicNav from '../components/PublicNav.jsx';
+import { config } from '../config.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, signIn } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('applicant');
   const [errors, setErrors] = useState({});
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const err = {};
     if (!emailOk(email)) err.email = 'Enter a valid email address';
     if (password.length < 8) err.password = 'Password must be at least 8 characters';
     setErrors(err);
     if (Object.keys(err).length) return;
-    login(email, role);
-    navigate(role === 'admin' ? '/admin/overview' : '/app/dashboard');
+    if (config.USE_MOCK) {
+      login(email, role);
+      navigate(role === 'admin' ? '/admin/overview' : '/app/dashboard');
+      return;
+    }
+    try {
+      const u = await signIn(email, password);
+      navigate(u.role === 'admin' ? '/admin/overview' : '/app/dashboard');
+    } catch (ex) {
+      setErrors({ password: ex.message });
+    }
   }
 
   function fillDemo(r) {

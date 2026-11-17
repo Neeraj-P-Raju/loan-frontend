@@ -4,8 +4,8 @@
 
 export const config = {
   APP_NAME: 'LoanPredict',
-  USE_MOCK: true,
-  API_BASE_URL: 'http://localhost:8000/api',
+  USE_MOCK: import.meta.env.VITE_USE_MOCK === 'true',
+  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
 };
 
 // Money is shown in rupees with Indian digit grouping.
