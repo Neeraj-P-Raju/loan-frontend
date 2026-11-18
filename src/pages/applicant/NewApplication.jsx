@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { createApplication } from '../../services/api.js';
+import { createApplication, getProfile, saveProfile, clearProfile } from '../../services/api.js';
 import { formatCurrency } from '../../config.js';
 import {
   getSections, visibleFields, clearHiddenAnswers, validateSection, validateField,
@@ -48,6 +48,15 @@ export default function NewApplication({ testMode = false }) {
   const [errors, setErrors] = useState({});
   const [agree, setAgree] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [prefilled, setPrefilled] = useState(false);
+  const profileNames = sections.filter((s) => ['personal', 'employment', 'financial'].includes(s.id)).flatMap((s) => s.fields.map((f) => f.name));
+
+  // Fill in details saved from the last application (never PAN, Aadhaar, mobile or documents).
+  useEffect(() => {
+    getProfile().then((p) => {
+      if (p && Object.keys(p).length) { setValues((old) => ({ ...p, ...old })); setPrefilled(true); }
+    }).catch(() => {});
+  }, []);
 
   const isReview = step === sections.length;
 
@@ -75,6 +84,7 @@ export default function NewApplication({ testMode = false }) {
     setSaving(true);
     try {
       const app = await createApplication(values, user, testMode);
+      if (!testMode) await saveProfile(values, profileNames).catch(() => {});
       navigate(user.role === 'admin' ? `/admin/applications/${app.id}` : `/app/result/${app.id}`);
     } catch (err) {
       setSaving(false);
@@ -85,6 +95,7 @@ export default function NewApplication({ testMode = false }) {
   return (
     <div>
       <h1>{testMode ? 'Test Application (testing mode)' : 'New Loan Application'}</h1>
+      {prefilled && <div className="notice info">Details from your last application were filled in. Please check them. PAN, Aadhaar, mobile and documents are never saved.{' '}<a href="#" onClick={(e) => { e.preventDefault(); clearProfile().then(() => { setValues({}); setPrefilled(false); }); }}>Clear saved details</a></div>}
       {testMode && <div className="notice info">TEST MODE: every field is optional (loan amount and term are still needed to predict) and documents are not required. The prediction uses the same model and rules as a real application, and the record is marked as a test.</div>}
       <div className="stepper">
         {stepTitles.map((t, i) => (

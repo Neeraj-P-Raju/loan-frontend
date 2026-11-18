@@ -3,6 +3,17 @@
 // hidden and its old answer is cleared (see clearHiddenAnswers below).
 
 const yesNo = ['Yes', 'No'];
+// Aadhaar numbers carry a Verhoeff check digit, so random 12-digit numbers are rejected.
+const VD = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+const VP = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+export function aadhaarOk(v) {
+  const n = String(v).replace(/\s/g, '');
+  if (!/^[2-9][0-9]{11}$/.test(n)) return false;
+  let c = 0;
+  [...n].reverse().forEach((ch, i) => { c = VD[c][VP[i % 8][Number(ch)]]; });
+  return c === 0;
+}
+
 const is = (key, value) => (v) => v[key] === value;
 
 export const sections = [
@@ -68,7 +79,7 @@ export const sections = [
     fields: [
       { name: 'mobile', label: 'Mobile number', type: 'text', required: true, hint: '10-digit Indian mobile number', pattern: '^[6-9][0-9]{9}$', patternMsg: 'Enter a valid 10-digit mobile number' },
       { name: 'pan', label: 'PAN', type: 'text', required: true, hint: 'Format ABCDE1234F', pattern: '^[A-Z]{5}[0-9]{4}[A-Z]$', patternMsg: 'PAN must look like ABCDE1234F' },
-      { name: 'aadhaar', label: 'Aadhaar number', type: 'text', required: true, hint: '12 digits. Only the last 4 digits are kept.', pattern: '^[2-9][0-9]{11}$', patternMsg: 'Enter a valid 12-digit Aadhaar number' },
+      { name: 'aadhaar', label: 'Aadhaar number', type: 'text', required: true, hint: '12 digits. Only the last 4 digits are kept.', pattern: '^[2-9][0-9]{11}$', patternMsg: 'Enter a valid 12-digit Aadhaar number', check: aadhaarOk, checkMsg: 'This Aadhaar number fails the checksum, so it is not a valid number. (Test Mode skips this check.)' },
       { name: 'bureauConsent', label: 'I consent to fetching my credit report from the credit bureau', type: 'select', required: true, options: ['Yes', 'No'], pattern: '^Yes$', patternMsg: 'Consent is required to fetch your credit report' },
     ],
   },
@@ -171,7 +182,7 @@ export function validateField(field, value) {
 export function validateSection(section, values) {
   const errors = {};
   for (const f of visibleFields(section, values)) {
-    const msg = validateField(f, values[f.name]) || (f.pattern && values[f.name] && !new RegExp(f.pattern, 'i').test(String(values[f.name]).replace(/\s/g, '')) ? f.patternMsg : '');
+    const msg = validateField(f, values[f.name]) || (f.check && values[f.name] && !f.check(values[f.name]) ? f.checkMsg : '') || (f.pattern && values[f.name] && !new RegExp(f.pattern, 'i').test(String(values[f.name]).replace(/\s/g, '')) ? f.patternMsg : '');
     if (msg) errors[f.name] = msg;
   }
   return errors;

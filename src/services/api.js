@@ -16,6 +16,9 @@ export const updateApplicationStatus = (...a) => impl.updateApplicationStatus(..
 export const deleteApplication = (...a) => impl.deleteApplication(...a);
 export const withdrawApplication = (id) => (config.USE_MOCK ? mock.updateApplicationStatus(id, 'Withdrawn') : real.withdrawApplication(id));
 export { downloadExport } from './realApi.js';
+export const getProfile = () => (config.USE_MOCK ? Promise.resolve({}) : real.getProfile());
+export const saveProfile = (...a) => (config.USE_MOCK ? Promise.resolve() : real.saveProfile(...a));
+export const clearProfile = () => (config.USE_MOCK ? Promise.resolve() : real.clearProfile());
 export const getModels = (...a) => impl.getModels(...a);
 export const runTraining = (...a) => impl.runTraining(...a);
 export const setActiveModel = (...a) => impl.setActiveModel(...a);

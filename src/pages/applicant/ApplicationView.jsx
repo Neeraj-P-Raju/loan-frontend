@@ -24,7 +24,13 @@ export default function ApplicationView({ detail }) {
   const allFields = sections.flatMap((s) => s.fields);
 
   // Illustrative explanation only, written from simple rules (demo).
-  const factors = [
+  const real = !config.USE_MOCK && a.bureauScore;
+  const factors = real ? [
+    { label: 'Credit bureau score (simulated)', value: (a.bureauScore - 300) / 600 },
+    { label: 'Repayment burden (lower is better)', value: 1 - Math.min((a.foir || 0) / 0.75, 1) },
+    { label: 'Loan size vs yearly income', value: 1 - Math.min((a.loanToIncome || 0) / 6, 1) },
+    { label: 'Employment', value: app.employmentStatus === 'Unemployed' ? 0.2 : 0.8 },
+  ] : [
     { label: 'Credit history', value: String(a.creditHistory || '').startsWith('Good') ? 0.9 : 0.3 },
     { label: 'Income vs. repayment', value: Math.min(1, app.income / (app.loanAmount / app.loanTerm + 1) / 6) },
     { label: 'Loan amount', value: Math.max(0.1, 1 - app.loanAmount / 5000000) },
@@ -35,8 +41,7 @@ export default function ApplicationView({ detail }) {
     <div>
       <h1>{detail ? 'Application Details' : 'Prediction Result'}</h1>
       <div className="notice">
-        <strong>Demo prediction.</strong> No trained model is connected yet. This result comes from a simple
-        sample rule and is not a real lending decision.
+        {config.USE_MOCK ? <><strong>Demo prediction.</strong> No trained model is connected yet. This result comes from a simple sample rule and is not a real lending decision.</> : <><strong>Model estimate.</strong> Made by the active model, trained on synthetic data, using a simulated credit bureau score. It is not a real lending decision.</>}
       </div>
 
       <div className={'result-box ' + (ok ? 'yes' : 'no')}>
@@ -60,9 +65,9 @@ export default function ApplicationView({ detail }) {
           </dl>
         </div>
         <div className="card">
-          <h3>Why this result? (illustrative)</h3>
+          <h3>{real ? 'Why this result? (from this application)' : 'Why this result? (illustrative)'}</h3>
           <BarList teal rows={factors.map((f) => ({ label: f.label, value: Math.round(f.value * 100) }))} max={100} format={(v) => v + '%'} />
-          <p className="muted">Higher bars helped the result. These bars are sample values for the demo.</p>
+          <p className="muted">{real ? `Higher bars helped the result. Bureau score ${a.bureauScore}, repayment burden (FOIR) ${Math.round((a.foir || 0) * 100)}%. The model weighs more than these four numbers.` : 'Higher bars helped the result. These bars are sample values for the demo.'}</p>
         </div>
       </div>
 

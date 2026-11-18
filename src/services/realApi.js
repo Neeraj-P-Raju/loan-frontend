@@ -74,6 +74,9 @@ export const getAuditLogs = () => req('/audit');
 export const addAudit = async () => {};   // the server writes audit entries itself
 export const getRetentionPreview = (days) => req('/retention/preview?days=' + days);
 export const applyRetention = async (days, mode) => (await req('/retention/apply', { method: 'POST', body: { days, mode } })).affected;
+export const getProfile = () => req('/profile');
+export const saveProfile = (values, names) => req('/profile', { method: 'PUT', body: Object.fromEntries(names.filter((n) => values[n] !== undefined && values[n] !== '' && !(values[n] instanceof File)).map((n) => [n, values[n]])) });
+export const clearProfile = () => req('/profile', { method: 'DELETE' });
 export const withdrawApplication = (id) => req(`/applications/${id}/withdraw`, { method: 'POST', body: {} });
 export async function downloadExport(kind) {         // kind: 'audit' or 'applications'
   const res = await fetch(`${config.API_BASE_URL}/export/${kind}.xlsx`, { headers: { Authorization: 'Bearer ' + localStorage.getItem(tokenKey) } });
