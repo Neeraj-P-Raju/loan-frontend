@@ -97,9 +97,7 @@ export const sections = [
       { name: 'institution', label: 'Institution', type: 'text', required: true, showIf: is('loanType', 'Education loan') },
       { name: 'courseYears', label: 'Course duration', type: 'number', unit: 'years', required: true, min: 1, max: 8, showIf: is('loanType', 'Education loan') },
       // business loan
-      { name: 'bizLoanType', label: 'Business type', type: 'text', required: true, showIf: is('loanType', 'Business loan') },
-      { name: 'bizLoanYears', label: 'Years of operation', type: 'number', unit: 'years', required: true, min: 0, max: 60, showIf: is('loanType', 'Business loan') },
-      { name: 'fundsPurpose', label: 'Purpose of funds', type: 'text', required: true, showIf: is('loanType', 'Business loan') },
+      { name: 'bizLoanType', label: 'Type of business you plan to start or fund', type: 'text', required: true, showIf: (v) => v.loanType === 'Business loan' && !['Self-employed', 'Business owner'].includes(v.employmentStatus) },
       // previous loan
       { name: 'hadPreviousLoan', label: 'Have you taken a loan from us before?', type: 'select', required: true, options: yesNo },
       { name: 'previousRepayment', label: 'Repayment record of the previous loan', type: 'select', required: true, options: ['Repaid on time', 'Some delays', 'Not fully repaid'], showIf: is('hadPreviousLoan', 'Yes') },
@@ -173,7 +171,7 @@ export function validateField(field, value) {
 export function validateSection(section, values) {
   const errors = {};
   for (const f of visibleFields(section, values)) {
-    const msg = validateField(f, values[f.name]) || (f.pattern && values[f.name] && !new RegExp(f.pattern).test(String(values[f.name]).toUpperCase().replace(/\s/g, '')) ? f.patternMsg : '');
+    const msg = validateField(f, values[f.name]) || (f.pattern && values[f.name] && !new RegExp(f.pattern, 'i').test(String(values[f.name]).replace(/\s/g, '')) ? f.patternMsg : '');
     if (msg) errors[f.name] = msg;
   }
   return errors;
